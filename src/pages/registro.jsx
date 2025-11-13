@@ -2,14 +2,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { validarFormularioRegistro, regionesYComunas } from '../utils/helpers';
+import { useUsuario } from '../context/UsuarioContext';
 
 export function Registro() {
     const navigate = useNavigate();
+    const { registrarUsuario } = useUsuario();
     const [formData, setFormData] = useState({
         run: '',
         nombre: '',
         apellidos: '',
         email: '',
+        password: '',
+        confirmarPassword: '',
         fechaNacimiento: '',
         region: '',
         comuna: '',
@@ -47,13 +51,36 @@ export function Registro() {
     const handleSubmit = (e) => {
         e.preventDefault();
         
+        // Validaciones básicas
+        if (formData.password !== formData.confirmarPassword) {
+            setErrores({ password: '❌ Las contraseñas no coinciden' });
+            return;
+        }
+
+        if (formData.password.length < 6) {
+            setErrores({ password: '❌ La contraseña debe tener al menos 6 caracteres' });
+            return;
+        }
+
         const erroresValidacion = validarFormularioRegistro(formData);
         
         if (Object.keys(erroresValidacion).length === 0) {
-            alert('✅ Registro completado exitosamente');
-            localStorage.setItem('usuario', JSON.stringify(formData));
+            // Registrar en UsuarioContext
+            registrarUsuario({
+                run: formData.run,
+                nombre: formData.nombre,
+                apellidos: formData.apellidos,
+                email: formData.email,
+                password: formData.password,
+                region: formData.region,
+                comuna: formData.comuna,
+                direccion: formData.direccion,
+                fechaNacimiento: formData.fechaNacimiento
+            });
+
+            alert('✅ ¡Registro completado! Ahora puedes iniciar sesión.');
             setFormData({ 
-                run: '', nombre: '', apellidos: '', email: '', 
+                run: '', nombre: '', apellidos: '', email: '', password: '', confirmarPassword: '',
                 fechaNacimiento: '', region: '', comuna: '', direccion: '' 
             });
             navigate('/login');
@@ -123,6 +150,27 @@ export function Registro() {
                         required 
                     />
                     {errores.email && <div className="error">{errores.email}</div>}
+
+                    <label>Contraseña:</label>
+                    <input 
+                        type="password" 
+                        name="password" 
+                        placeholder="••••••"
+                        value={formData.password}
+                        onChange={handleChange}
+                        required 
+                    />
+                    {errores.password && <div className="error">{errores.password}</div>}
+
+                    <label>Confirmar Contraseña:</label>
+                    <input 
+                        type="password" 
+                        name="confirmarPassword" 
+                        placeholder="••••••"
+                        value={formData.confirmarPassword}
+                        onChange={handleChange}
+                        required 
+                    />
                     
                     <label>Fecha de Nacimiento:</label>
                     <input 

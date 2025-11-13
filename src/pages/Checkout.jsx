@@ -1,0 +1,268 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useCarrito } from '../context/CarritoContext';
+import { useUsuario } from '../context/UsuarioContext';
+
+export function Checkout() {
+    const navigate = useNavigate();
+    const { carrito, getTotalCarrito, vaciarCarrito } = useCarrito();
+    const { usuarioLogueado, agregarOrdenAlUsuario } = useUsuario();
+    
+    const [formData, setFormData] = useState({
+        nombre: usuarioLogueado?.nombre || '',
+        email: usuarioLogueado?.email || '',
+        direccion: '',
+        ciudad: '',
+        telefono: '',
+        numeroTarjeta: '',
+        mesExp: '',
+        annoExp: '',
+        cvv: ''
+    });
+
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [orderCreated, setOrderCreated] = useState(false);
+
+    if (carrito.length === 0 && !orderCreated) {
+        return (
+            <main style={{ padding: '2rem', textAlign: 'center', minHeight: '60vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <h1>🛒 Carrito vacío</h1>
+                <p style={{ fontSize: '1.1em', margin: '1rem 0', color: '#666' }}>No hay productos para checkout.</p>
+                <button onClick={() => navigate('/productos')} className="btn" style={{ maxWidth: '200px', margin: '2rem auto' }}>
+                    Volver a productos
+                </button>
+            </main>
+        );
+    }
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+
+        // Validaciones básicas
+        if (!formData.nombre || !formData.email || !formData.direccion || !formData.numeroTarjeta) {
+            alert('❌ Por favor completa todos los campos');
+            return;
+        }
+
+        if (formData.numeroTarjeta.replace(/\s/g, '').length !== 16) {
+            alert('❌ Número de tarjeta debe tener 16 dígitos');
+            return;
+        }
+
+        setIsProcessing(true);
+
+        // Simular procesamiento de pago
+        setTimeout(() => {
+            // Crear orden
+            const orden = {
+                id: Math.random().toString(36).substr(2, 9),
+                fecha: new Date().toLocaleString('es-CL'),
+                total: getTotalCarrito(),
+                items: carrito,
+                entrega: {
+                    nombre: formData.nombre,
+                    email: formData.email,
+                    direccion: formData.direccion,
+                    ciudad: formData.ciudad,
+                    telefono: formData.telefono
+                },
+                estado: 'confirmada'
+            };
+
+            // Guardar orden en usuario logueado
+            if (usuarioLogueado) {
+                agregarOrdenAlUsuario(usuarioLogueado.id, orden);
+            }
+
+            // Limpiar carrito
+            vaciarCarrito();
+            setIsProcessing(false);
+            setOrderCreated(true);
+
+            // Mostrar confirmación
+            setTimeout(() => {
+                alert('✅ ¡Orden confirmada exitosamente! Número de orden: ' + orden.id);
+                navigate('/');
+            }, 1500);
+        }, 2000);
+    };
+
+    if (orderCreated) {
+        return (
+            <main style={{ padding: '2rem', textAlign: 'center', minHeight: '60vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <h1 style={{ color: '#5cb85c' }}>✅ ¡Orden Confirmada!</h1>
+                <p style={{ fontSize: '1.1em', margin: '1rem 0', color: '#666' }}>Gracias por tu compra. Recibirás un correo de confirmación pronto.</p>
+                <button onClick={() => navigate('/')} className="btn" style={{ maxWidth: '200px', margin: '2rem auto' }}>
+                    Volver al inicio
+                </button>
+            </main>
+        );
+    }
+
+    return (
+        <main style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+            <h1>🛍️ Finalizar Compra</h1>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '2rem' }}>
+                {/* Resumen de Orden */}
+                <section style={{ background: '#f9f9f9', padding: '1.5rem', borderRadius: '8px' }}>
+                    <h2>📋 Resumen de Orden</h2>
+                    <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                        {carrito.map(item => (
+                            <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid #ddd' }}>
+                                <span>{item.nombre} x{item.cantidad}</span>
+                                <span>${(item.precio * item.cantidad).toLocaleString('es-CL')}</span>
+                            </div>
+                        ))}
+                    </div>
+                    <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '2px solid #333' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2em', fontWeight: 'bold' }}>
+                            <span>Total:</span>
+                            <span style={{ color: '#5cb85c' }}>${getTotalCarrito().toLocaleString('es-CL')}</span>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Formulario de Checkout */}
+                <section>
+                    <h2>📮 Información de Entrega</h2>
+                    <form onSubmit={handleSubmit}>
+                        <input
+                            type="text"
+                            name="nombre"
+                            placeholder="Nombre completo"
+                            value={formData.nombre}
+                            onChange={handleChange}
+                            required
+                            style={{ width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
+                        />
+                        <input
+                            type="email"
+                            name="email"
+                            placeholder="Email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            required
+                            style={{ width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
+                        />
+                        <input
+                            type="text"
+                            name="direccion"
+                            placeholder="Dirección"
+                            value={formData.direccion}
+                            onChange={handleChange}
+                            required
+                            style={{ width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
+                        />
+                        <input
+                            type="text"
+                            name="ciudad"
+                            placeholder="Ciudad"
+                            value={formData.ciudad}
+                            onChange={handleChange}
+                            style={{ width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
+                        />
+                        <input
+                            type="tel"
+                            name="telefono"
+                            placeholder="Teléfono"
+                            value={formData.telefono}
+                            onChange={handleChange}
+                            style={{ width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
+                        />
+
+                        <h3 style={{ marginTop: '1.5rem' }}>💳 Datos de Pago</h3>
+                        <input
+                            type="text"
+                            name="numeroTarjeta"
+                            placeholder="Número de tarjeta (16 dígitos)"
+                            value={formData.numeroTarjeta}
+                            onChange={(e) => {
+                                let value = e.target.value.replace(/\s/g, '').slice(0, 16);
+                                setFormData(prev => ({ ...prev, numeroTarjeta: value }));
+                            }}
+                            required
+                            maxLength="16"
+                            style={{ width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
+                        />
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                            <input
+                                type="text"
+                                name="mesExp"
+                                placeholder="MM"
+                                value={formData.mesExp}
+                                onChange={(e) => setFormData(prev => ({ ...prev, mesExp: e.target.value.slice(0, 2) }))}
+                                required
+                                maxLength="2"
+                                style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
+                            />
+                            <input
+                                type="text"
+                                name="annoExp"
+                                placeholder="AA"
+                                value={formData.annoExp}
+                                onChange={(e) => setFormData(prev => ({ ...prev, annoExp: e.target.value.slice(0, 2) }))}
+                                required
+                                maxLength="2"
+                                style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
+                            />
+                        </div>
+
+                        <input
+                            type="text"
+                            name="cvv"
+                            placeholder="CVV (3 dígitos)"
+                            value={formData.cvv}
+                            onChange={(e) => setFormData(prev => ({ ...prev, cvv: e.target.value.slice(0, 3) }))}
+                            required
+                            maxLength="3"
+                            style={{ width: '100%', padding: '10px', marginBottom: '1rem', border: '1px solid #ddd', borderRadius: '4px' }}
+                        />
+
+                        <button
+                            type="submit"
+                            disabled={isProcessing}
+                            style={{
+                                width: '100%',
+                                padding: '12px',
+                                background: isProcessing ? '#ccc' : '#5cb85c',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '4px',
+                                fontSize: '1.1em',
+                                cursor: isProcessing ? 'not-allowed' : 'pointer',
+                                fontWeight: 'bold'
+                            }}
+                        >
+                            {isProcessing ? '⏳ Procesando pago...' : '✅ Confirmar Compra'}
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => navigate('/carrito')}
+                            style={{
+                                width: '100%',
+                                padding: '12px',
+                                background: '#6c757d',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '4px',
+                                fontSize: '1em',
+                                cursor: 'pointer',
+                                marginTop: '0.5rem'
+                            }}
+                        >
+                            ← Volver al carrito
+                        </button>
+                    </form>
+                </section>
+            </div>
+        </main>
+    );
+}

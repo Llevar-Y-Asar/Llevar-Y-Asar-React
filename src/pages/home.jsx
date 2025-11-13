@@ -1,10 +1,11 @@
 // src/pages/home.jsx
 import { Link } from 'react-router-dom';
 import { useCarrito } from '../context/CarritoContext';
-import { productos } from '../data/productos';
+import { useProductos } from '../context/productosContext';
 
 export function Home() {
     const { agregarAlCarrito } = useCarrito();
+    const { productos } = useProductos();
     
     return (
     <>
@@ -38,7 +39,23 @@ export function Home() {
                   <img src={producto.imagen} alt={producto.nombre} />
                   <h3>{producto.nombre}</h3>
                   <p className="price">${producto.precio.toLocaleString('es-CL')}</p>
-                  <button className="btn" onClick={() => agregarAlCarrito(producto)}>Agregar al carrito</button>
+                  <p style={{ fontSize: '0.9em', margin: '5px 0' }}>
+                    Stock: <span style={{ 
+                        color: producto.stock <= 3 ? '#d9534f' : '#5cb85c',
+                        fontWeight: 'bold'
+                    }}>{producto.stock}</span> {producto.stock <= 3 ? '⚠️' : ''}
+                  </p>
+                  <button 
+                    className="btn" 
+                    onClick={() => agregarAlCarrito(producto)}
+                    disabled={producto.stock === 0}
+                    style={{
+                        opacity: producto.stock === 0 ? 0.5 : 1,
+                        cursor: producto.stock === 0 ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    {producto.stock === 0 ? 'Agotado' : 'Agregar al carrito'}
+                  </button>
               </article>
               ))}
           </div>

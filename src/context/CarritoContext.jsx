@@ -1,5 +1,6 @@
 // src/context/CarritoContext.jsx
 import { createContext, useState, useEffect, useContext } from 'react';
+import { useProductos } from './productosContext';
 
 export const CarritoContext = createContext();
 
@@ -18,6 +19,8 @@ export function CarritoProvider({ children }) {
     return saved ? JSON.parse(saved) : [];
     });
 
+    const { actualizarStock } = useProductos();
+
   // Guardar en localStorage cada vez que cambia el carrito
     useEffect(() => {
     localStorage.setItem('carrito', JSON.stringify(carrito));
@@ -26,14 +29,23 @@ export function CarritoProvider({ children }) {
     const agregarAlCarrito = (producto) => {
     setCarrito(prevCarrito => {
         const item = prevCarrito.find(p => p.id === producto.id);
+        
         if (item) {
-        // Si ya existe, aumentar cantidad
-        return prevCarrito.map(p =>
-            p.id === producto.id ? { ...p, cantidad: p.cantidad + 1 } : p
-        );
+        // Si ya existe, aumentar cantidad y reducir stock
+        if (producto.stock > 0) {
+            actualizarStock(producto.id, 1);
+            return prevCarrito.map(p =>
+                p.id === producto.id ? { ...p, cantidad: p.cantidad + 1 } : p
+            );
+        }
+        return prevCarrito;
         } else {
-        // Si no existe, agregarlo con cantidad 1
-        return [...prevCarrito, { ...producto, cantidad: 1 }];
+        // Si no existe, agregarlo con cantidad 1 y reducir stock
+        if (producto.stock > 0) {
+            actualizarStock(producto.id, 1);
+            return [...prevCarrito, { ...producto, cantidad: 1 }];
+        }
+        return prevCarrito;
         }
     });
     };

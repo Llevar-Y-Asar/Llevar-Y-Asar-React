@@ -2,11 +2,13 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { validarFormularioLogin } from '../utils/helpers';
+import { useUsuario } from '../context/UsuarioContext';
 
 export function Login() {
     const navigate = useNavigate();
+    const { iniciarSesion, usuarios } = useUsuario();
     const [formData, setFormData] = useState({
-        email: '',
+        run: '',
         password: ''
     });
 
@@ -29,15 +31,23 @@ export function Login() {
     const handleSubmit = (e) => {
         e.preventDefault();
         
-        const erroresValidacion = validarFormularioLogin(formData);
+        // Buscar usuario por RUT
+        const usuario = usuarios.find(u => u.run === formData.run);
         
-        if (Object.keys(erroresValidacion).length === 0) {
-            alert('✅ ¡Bienvenido a Llevar & Asar!');
-            localStorage.setItem('usuarioLogeado', JSON.stringify(formData));
-            navigate('/');
-        } else {
-            setErrores(erroresValidacion);
+        if (!usuario) {
+            setErrores({ run: '❌ Usuario no encontrado. Verifica tu RUT.' });
+            return;
         }
+        
+        if (usuario.password !== formData.password) {
+            setErrores({ password: '❌ Contraseña incorrecta.' });
+            return;
+        }
+        
+        // Login exitoso
+        iniciarSesion(formData.run, formData.password);
+        alert(`✅ ¡Bienvenido ${usuario.nombre}!`);
+        navigate('/perfil');
     };
 
     return (
@@ -46,17 +56,16 @@ export function Login() {
                 <h1>Iniciar Sesión</h1>
                 <p>Ingresa tus datos para acceder a tu cuenta y realizar pedidos.</p>
                 <form id="form-login" onSubmit={handleSubmit}>
-                    <label>Email:</label>
+                    <label>RUT (sin puntos ni guión):</label>
                     <input
-                        type="email"
-                        name="email"
-                        maxLength="100"
-                        placeholder="usuario@mail.com"
-                        value={formData.email}
+                        type="text"
+                        name="run"
+                        placeholder="12345678"
+                        value={formData.run}
                         onChange={handleChange}
                         required
                     />
-                    {errores.email && <div className="error">{errores.email}</div>}
+                    {errores.run && <div className="error">{errores.run}</div>}
 
                     <label>Contraseña:</label>
                     <input

@@ -1,8 +1,9 @@
 // src/pages/Productos.jsx
-import { productos } from '../data/productos';
+import { useProductos } from '../context/productosContext';
 import { useCarrito } from '../context/CarritoContext';
 
 export function Productos() {
+    const { productos } = useProductos();
     const { agregarAlCarrito } = useCarrito();
 
     return (
@@ -28,12 +29,21 @@ export function Productos() {
                                     <h3 className="producto__titulo">{producto.nombre}</h3>
                                     <p className="producto__descripcion">{producto.descripcion}</p>
                                     <p className="producto__precio">${producto.precio.toLocaleString('es-CL')}</p>
-                                    <p>Stock: {producto.stock} {producto.stock <= producto.stockCritico ? '⚠' : ''}</p>
+                                    <p>Stock: <span style={{ 
+                                        color: producto.stock <= 3 ? '#d9534f' : '#5cb85c',
+                                        fontWeight: 'bold'
+                                    }}>{producto.stock}</span> {producto.stock <= 3 ? '⚠️ Bajo' : ''}</p>
                                     <button 
                                         className="producto__btn" 
                                         onClick={() => agregarAlCarrito(producto)}
+                                        disabled={producto.stock === 0}
+                                        style={{
+                                            opacity: producto.stock === 0 ? 0.5 : 1,
+                                            cursor: producto.stock === 0 ? 'not-allowed' : 'pointer',
+                                            background: producto.stock === 0 ? '#ccc' : ''
+                                        }}
                                     >
-                                        Agregar al carrito
+                                        {producto.stock === 0 ? 'Agotado' : 'Agregar al carrito'}
                                     </button>
                                 </div>
                             </div>
