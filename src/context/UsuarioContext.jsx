@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect, useContext } from 'react';
+import { usuariosAPI } from '../services/api';
 
 export const UsuarioContext = createContext();
 
@@ -16,12 +17,10 @@ export function UsuarioProvider({ children }) {
         return saved ? JSON.parse(saved) : null;
     });
 
-    const [usuarios, setUsuarios] = useState(() => {
-        const saved = localStorage.getItem('usuarios_registrados');
-        return saved ? JSON.parse(saved) : [];
-    });
+    const [cargando, setCargando] = useState(false);
+    const [error, setError] = useState(null);
 
-    // Guardar usuario logueado
+    // Guardar usuario logueado en localStorage
     useEffect(() => {
         if (usuarioLogueado) {
             localStorage.setItem('usuario_logueado', JSON.stringify(usuarioLogueado));
@@ -30,74 +29,87 @@ export function UsuarioProvider({ children }) {
         }
     }, [usuarioLogueado]);
 
-    // Guardar lista de usuarios
-    useEffect(() => {
-        localStorage.setItem('usuarios_registrados', JSON.stringify(usuarios));
-    }, [usuarios]);
-
-    const registrarUsuario = (usuarioData) => {
-        const nuevoUsuario = {
-            id: Math.max(...usuarios.map(u => u.id || 0), 0) + 1,
-            ...usuarioData,
-            fechaRegistro: new Date().toISOString(),
-            ordenes: []
-        };
-        setUsuarios([...usuarios, nuevoUsuario]);
-        return nuevoUsuario;
-    };
-
-    const iniciarSesion = (run, password) => {
-        const usuario = usuarios.find(u => u.run === run);
-        if (usuario) {
-            setUsuarioLogueado(usuario);
-            return usuario;
+    // Registrar usuario con validación en backend
+    const registrarUsuario = async (usuarioData) => {
+        setCargando(true);
+        setError(null);
+        try {
+            const respuesta = await usuariosAPI.registrar(usuarioData);
+            return respuesta.usuario;
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        } finally {
+            setCargando(false);
         }
-        return null;
     };
 
+    // Iniciar sesión contra el backend
+    const iniciarSesion = async (rut, password) => {
+        setCargando(true);
+        setError(null);
+        try {
+            const respuesta = await usuariosAPI.login(rut, password);
+            setUsuarioLogueado(respuesta.usuario);
+            return respuesta.usuario;
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        } finally {
+            setCargando(false);
+        }
+    };
+
+    // Cerrar sesión
     const cerrarSesion = () => {
         setUsuarioLogueado(null);
+        localStorage.removeItem('usuario_logueado');
     };
 
-    const actualizarUsuario = (id, datosActualizados) => {
-        setUsuarios(usuarios.map(u =>
-            u.id === id ? { ...u, ...datosActualizados } : u
-        ));
-        if (usuarioLogueado && usuarioLogueado.id === id) {
-            setUsuarioLogueado({ ...usuarioLogueado, ...datosActualizados });
+    // Actualizar datos del usuario
+    const actualizarUsuario = async (rut, datosActualizados) => {
+        setCargando(true);
+        setError(null);
+        try {
+            const respuesta = await usuariosAPI.actualizar(rut, datosActualizados);
+            const usuarioActualizado = respuesta.usuario;
+            setUsuarioLogueado(usuarioActualizado);
+            return usuarioActualizado;
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        } finally {
+            setCargando(false);
         }
     };
 
-    const eliminarUsuario = (id) => {
-        setUsuarios(usuarios.filter(u => u.id !== id));
-        if (usuarioLogueado && usuarioLogueado.id === id) {
+    // Desactivar usuario
+    const desactivarUsuario = async (rut) => {
+        setCargando(true);
+        setError(null);
+        try {
+            await usuariosAPI.desactivar(rut);
             setUsuarioLogueado(null);
+            localStorage.removeItem('usuario_logueado');
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        } finally {
+            setCargando(false);
         }
-    };
-
-    const agregarOrdenAlUsuario = (usuarioId, orden) => {
-        setUsuarios(usuarios.map(u => {
-            if (u.id === usuarioId) {
-                return {
-                    ...u,
-                    ordenes: [...(u.ordenes || []), orden]
-                };
-            }
-            return u;
-        }));
     };
 
     return (
         <UsuarioContext.Provider 
             value={{ 
                 usuarioLogueado,
-                usuarios,
                 registrarUsuario,
                 iniciarSesion,
                 cerrarSesion,
                 actualizarUsuario,
-                eliminarUsuario,
-                agregarOrdenAlUsuario
+                desactivarUsuario,
+                cargando,
+                error
             }}
         >
             {children}

@@ -1,14 +1,13 @@
 // src/pages/Login.jsx
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { validarFormularioLogin } from '../utils/helpers';
 import { useUsuario } from '../context/UsuarioContext';
 
 export function Login() {
     const navigate = useNavigate();
-    const { iniciarSesion, usuarios } = useUsuario();
+    const { iniciarSesion, cargando, error } = useUsuario();
     const [formData, setFormData] = useState({
-        run: '',
+        rut: '',
         password: ''
     });
 
@@ -28,26 +27,19 @@ export function Login() {
         }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         
-        // Buscar usuario por RUT
-        const usuario = usuarios.find(u => u.run === formData.run);
-        
-        if (!usuario) {
-            setErrores({ run: '❌ Usuario no encontrado. Verifica tu RUT.' });
-            return;
+        try {
+            // Intentar login contra el backend
+            const usuario = await iniciarSesion(formData.rut, formData.password);
+            alert(`✅ ¡Bienvenido ${usuario.nombre}!`);
+            navigate('/perfil');
+        } catch (err) {
+            setErrores({ 
+                general: `❌ ${err.message || 'Error al iniciar sesión. Verifica RUT y contraseña.'}` 
+            });
         }
-        
-        if (usuario.password !== formData.password) {
-            setErrores({ password: '❌ Contraseña incorrecta.' });
-            return;
-        }
-        
-        // Login exitoso
-        iniciarSesion(formData.run, formData.password);
-        alert(`✅ ¡Bienvenido ${usuario.nombre}!`);
-        navigate('/perfil');
     };
 
     return (
@@ -56,16 +48,20 @@ export function Login() {
                 <h1>Iniciar Sesión</h1>
                 <p>Ingresa tus datos para acceder a tu cuenta y realizar pedidos.</p>
                 <form id="form-login" onSubmit={handleSubmit}>
-                    <label>RUT (sin puntos ni guión):</label>
+                    {errores.general && <div className="error">{errores.general}</div>}
+                    {error && <div className="error">{error}</div>}
+
+                    <label>RUT (Ej: 12.345.678-9):</label>
                     <input
                         type="text"
-                        name="run"
-                        placeholder="12345678"
-                        value={formData.run}
+                        name="rut"
+                        placeholder="12.345.678-9"
+                        value={formData.rut}
                         onChange={handleChange}
                         required
+                        disabled={cargando}
                     />
-                    {errores.run && <div className="error">{errores.run}</div>}
+                    {errores.rut && <div className="error">{errores.rut}</div>}
 
                     <label>Contraseña:</label>
                     <input
@@ -75,10 +71,13 @@ export function Login() {
                         value={formData.password}
                         onChange={handleChange}
                         required
+                        disabled={cargando}
                     />
                     {errores.password && <div className="error">{errores.password}</div>}
 
-                    <button type="submit">Iniciar Sesión</button>
+                    <button type="submit" disabled={cargando}>
+                        {cargando ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+                    </button>
                     <p>¿No tienes cuenta? <Link to="/registro">Regístrate aquí</Link></p>
                 </form>
             </section>

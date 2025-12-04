@@ -16,6 +16,7 @@ import { Checkout } from './pages/Checkout';
 import { CarritoProvider } from './context/CarritoContext';
 import { ProductosProvider } from './context/productosContext';
 import { UsuarioProvider } from './context/UsuarioContext';
+import { OrdenesProvider } from './context/OrdenesContext';
 import './App.css';
 
 export default function App() {
@@ -24,21 +25,23 @@ export default function App() {
       <UsuarioProvider>
         <ProductosProvider>
           <CarritoProvider>
-            <Header />
-            <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/productos" element={<Productos />} />
-          <Route path="/nosotros" element={<Nosotros />} />
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/contacto" element={<Contacto />} />
-          <Route path="/registro" element={<Registro />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/perfil" element={<Perfil />} />
-          <Route path="/carrito" element={<Carrito />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/admin" element={<Admin />} />
-            </Routes>
-            <Footer />
+            <OrdenesProvider>
+              <Header />
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/productos" element={<Productos />} />
+                <Route path="/nosotros" element={<Nosotros />} />
+                <Route path="/blog" element={<Blog />} />
+                <Route path="/contacto" element={<Contacto />} />
+                <Route path="/registro" element={<Registro />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/perfil" element={<Perfil />} />
+                <Route path="/carrito" element={<Carrito />} />
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/admin" element={<Admin />} />
+              </Routes>
+              <Footer />
+            </OrdenesProvider>
           </CarritoProvider>
         </ProductosProvider>
       </UsuarioProvider>
