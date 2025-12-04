@@ -34,6 +34,9 @@ export function Header() {
                     <li style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <span style={{ color: '#5cb85c', fontWeight: 'bold' }}>👤 {usuarioLogueado.nombre.split(' ')[0]}</span>
                         <Link to="/perfil" className={isActive('/perfil')} style={{ color: '#007bff' }}>Perfil</Link>
+                        {usuarioLogueado.rol === 'ADMIN' && (
+                            <Link to="/admin" className={isActive('/admin')} style={{ color: '#ff6b35', fontWeight: 'bold' }}>⚙️ Admin</Link>
+                        )}
                         <button 
                             onClick={handleCerrarSesion}
                             style={{

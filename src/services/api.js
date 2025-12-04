@@ -50,8 +50,11 @@ export const productosAPI = {
   // Obtener todos los productos
   obtenerTodos: () => request('/productos', 'GET'),
 
-  // Obtener solo productos activos
-  obtenerActivos: () => request('/productos/activos', 'GET'),
+  // Obtener solo productos activos (si el backend lo soporta)
+  // De lo contrario, usa obtenerTodos() y filtra en el cliente
+  obtenerActivos: () => request('/productos', 'GET').then(productos => 
+    productos.filter(p => p.activo === true)
+  ),
 
   // Obtener producto por ID
   obtenerPorId: (id) => request(`/productos/${id}`, 'GET'),
@@ -64,18 +67,18 @@ export const productosAPI = {
   buscar: (termino) => request(`/productos/buscar?q=${termino}`, 'GET'),
 
   // Crear producto (admin)
-  crear: (producto) => request('/productos/admin', 'POST', producto),
+  crear: (producto) => request('/productos', 'POST', producto),
 
   // Actualizar producto (admin)
   actualizar: (id, producto) => 
-    request(`/productos/admin/${id}`, 'PUT', producto),
+    request(`/productos/${id}`, 'PUT', producto),
 
   // Desactivar producto (admin)
   desactivar: (id) => 
-    request(`/productos/admin/${id}/desactivar`, 'PATCH'),
+    request(`/productos/${id}/desactivar`, 'PATCH'),
 
   // Eliminar producto (admin)
-  eliminar: (id) => request(`/productos/admin/${id}`, 'DELETE')
+  eliminar: (id) => request(`/productos/${id}`, 'DELETE')
 };
 
 // ============================================

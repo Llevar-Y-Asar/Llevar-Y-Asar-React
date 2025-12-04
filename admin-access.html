@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso Admin - LlevarYAsar</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 1rem;
+        }
+        button:hover {
+            background: #764ba2;
+        }
+        .success {
+            color: green;
+            margin-top: 1rem;
+        }
+        .info {
+            color: #666;
+            margin-top: 1rem;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Acceso Admin</h1>
+        <p>Haz clic en el botón para acceder como administrador</p>
+        <button onclick="loginAsAdmin()">Ingresar como Admin</button>
+        <div id="message"></div>
+        <div class="info">
+            <p>Serás redirigido al panel de administración...</p>
+        </div>
+    </div>
+
+    <script>
+        function loginAsAdmin() {
+            const adminUser = {
+                rut: '20.000.000-0',
+                nombre: 'Administrador',
+                email: 'admin@llevarayasar.cl',
+                rol: 'ADMIN',
+                activo: true
+            };
+
+            localStorage.setItem('usuario_logueado', JSON.stringify(adminUser));
+            
+            const message = document.getElementById('message');
+            message.innerHTML = '<p class="success">✅ Acceso otorgado. Redirigiendo...</p>';
+            
+            setTimeout(() => {
+                window.location.href = '/admin';
+            }, 1500);
+        }
+
+        // Si ya hay un admin logueado, redirigir directamente
+        const usuario = localStorage.getItem('usuario_logueado');
+        if (usuario) {
+            try {
+                const userData = JSON.parse(usuario);
+                if (userData.rol === 'ADMIN') {
+                    window.location.href = '/admin';
+                }
+            } catch (err) {
+                // Continuar normalmente
+            }
+        }
+    </script>
+</body>
+</html>

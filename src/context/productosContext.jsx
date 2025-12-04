@@ -13,7 +13,7 @@ export function useProductos() {
 }
 
 export function ProductosProvider({ children }) {
-    const [productos, setProductos] = useState(productosIniciales);
+    const [productos, setProductos] = useState([]);
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState(null);
 
@@ -21,6 +21,20 @@ export function ProductosProvider({ children }) {
     useEffect(() => {
         cargarProductos();
     }, []);
+
+    // Recargar productos cada 5 segundos para reflejar cambios de stock
+    useEffect(() => {
+        const intervalo = setInterval(() => {
+            cargarProductos();
+        }, 5000);
+        
+        return () => clearInterval(intervalo);
+    }, []);
+
+    // Guardar stock en localStorage cuando cambia
+    useEffect(() => {
+        localStorage.setItem('productos_stock', JSON.stringify(productos));
+    }, [productos]);
 
     // Cargar productos desde el backend
     const cargarProductos = async () => {
@@ -31,15 +45,28 @@ export function ProductosProvider({ children }) {
             
             // Si el backend retorna productos, usarlos
             if (respuesta && respuesta.length > 0) {
-                setProductos(respuesta);
+                // Recuperar stock guardado localmente (si existe)
+                const stockLocal = localStorage.getItem('productos_stock');
+                if (stockLocal) {
+                    const productosConStock = JSON.parse(stockLocal);
+                    // Mergear: datos del backend con stock del localStorage
+                    const productosMerged = respuesta.map(p => {
+                        const stockGuardado = productosConStock.find(ps => ps.id === p.id);
+                        return stockGuardado ? { ...p, stock: stockGuardado.stock } : p;
+                    });
+                    setProductos(productosMerged);
+                } else {
+                    setProductos(respuesta);
+                }
             } else {
                 // Si no hay, usar los datos iniciales como fallback
                 setProductos(productosIniciales);
             }
         } catch (err) {
-            console.warn('No se pudo conectar al backend, usando datos locales:', err.message);
-            // Usar datos iniciales como fallback
-            setProductos(productosIniciales);
+            console.error('Error cargando productos del backend:', err.message);
+            setError(err.message);
+            // No hacer fallback a hardcoded - mostrar error
+            setProductos([]);
         } finally {
             setCargando(false);
         }
