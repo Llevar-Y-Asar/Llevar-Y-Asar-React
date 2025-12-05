@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCarrito } from '../context/CarritoContext';
 import { useUsuario } from '../context/UsuarioContext';
+import { useOrdenes } from '../context/OrdenesContext';
+import { carritoAPI } from '../services/api';
 
 export function Checkout() {
     const navigate = useNavigate();
     const { carrito, getTotalCarrito, vaciarCarrito } = useCarrito();
-    const { usuarioLogueado, agregarOrdenAlUsuario } = useUsuario();
+    const { usuarioLogueado } = useUsuario();
+    const { crearOrden } = useOrdenes();
     
     const [formData, setFormData] = useState({
         nombre: usuarioLogueado?.nombre || '',
@@ -54,41 +57,43 @@ export function Checkout() {
             return;
         }
 
+        if (!usuarioLogueado) {
+            alert('❌ Debes iniciar sesión para crear una orden');
+            navigate('/login');
+            return;
+        }
+
         setIsProcessing(true);
 
         // Simular procesamiento de pago
-        setTimeout(() => {
-            // Crear orden
-            const orden = {
-                id: Math.random().toString(36).substr(2, 9),
-                fecha: new Date().toLocaleString('es-CL'),
-                total: getTotalCarrito(),
-                items: carrito,
-                entrega: {
-                    nombre: formData.nombre,
-                    email: formData.email,
-                    direccion: formData.direccion,
-                    ciudad: formData.ciudad,
-                    telefono: formData.telefono
-                },
-                estado: 'confirmada'
-            };
+        setTimeout(async () => {
+            try {
+                // Crear orden con el backend
+                const nuevaOrden = await crearOrden({
+                    usuarioId: usuarioLogueado.rut,  // Usar RUT como ID
+                    items: carrito,
+                    total: getTotalCarrito(),
+                    direccionEntrega: formData.direccion
+                });
 
-            // Guardar orden en usuario logueado
-            if (usuarioLogueado) {
-                agregarOrdenAlUsuario(usuarioLogueado.id, orden);
+                // Vaciar carrito en backend
+                await carritoAPI.vaciar(usuarioLogueado.rut);
+                
+                // Limpiar carrito localmente
+                vaciarCarrito();
+                
+                setIsProcessing(false);
+                setOrderCreated(true);
+
+                // Mostrar confirmación
+                setTimeout(() => {
+                    alert(`✅ ¡Orden confirmada exitosamente! Número de orden: ${nuevaOrden.numeroOrden}`);
+                    navigate('/perfil');
+                }, 1500);
+            } catch (error) {
+                setIsProcessing(false);
+                alert(`❌ Error al crear la orden: ${error.message}`);
             }
-
-            // Limpiar carrito
-            vaciarCarrito();
-            setIsProcessing(false);
-            setOrderCreated(true);
-
-            // Mostrar confirmación
-            setTimeout(() => {
-                alert('✅ ¡Orden confirmada exitosamente! Número de orden: ' + orden.id);
-                navigate('/');
-            }, 1500);
         }, 2000);
     };
 

@@ -1,6 +1,5 @@
 // src/context/CarritoContext.jsx
 import { createContext, useState, useEffect, useContext } from 'react';
-import { useProductos } from './productosContext';
 import { carritoAPI } from '../services/api';
 
 export const CarritoContext = createContext();
@@ -22,7 +21,6 @@ export function CarritoProvider({ children }) {
 
     const [cargando, setCargando] = useState(false);
     const [error, setError] = useState(null);
-    const { actualizarStock } = useProductos();
 
     // Guardar en localStorage cada vez que cambia el carrito
     useEffect(() => {
@@ -47,16 +45,30 @@ export function CarritoProvider({ children }) {
     // Agregar item al carrito
     const agregarAlCarrito = async (producto, usuarioRut = null) => {
         try {
-            const item = {
-                productoId: producto.id,
-                nombre: producto.nombre,
-                precio: producto.precio,
-                cantidad: 1,
-                imagen: producto.imagen
-            };
+            // Validar que tiene stock
+            if (!producto || producto.stock <= 0) {
+                setError('Producto sin stock');
+                return;
+            }
 
-            // Si hay usuario logueado, sincronizar con backend
+            // Actualizar stock en backend PRIMERO
+            try {
+                await carritoAPI.actualizarStock(producto.id, 1);
+            } catch (err) {
+                console.warn('Stock no actualizado en backend:', err);
+                setError('No se pudo actualizar el stock en el servidor');
+                return;
+            }
+
+            // Si hay usuario logueado, sincronizar carrito con backend
             if (usuarioRut) {
+                const item = {
+                    productoId: producto.id,
+                    nombre: producto.nombre,
+                    precio: producto.precio,
+                    cantidad: 1,
+                    imagen: producto.imagen
+                };
                 await carritoAPI.agregarItem(usuarioRut, item);
             }
 
@@ -67,7 +79,6 @@ export function CarritoProvider({ children }) {
                 if (itemExistente) {
                     // Si ya existe, aumentar cantidad
                     if (producto.stock > 0) {
-                        actualizarStock(producto.id, 1);
                         return prevCarrito.map(p =>
                             p.id === producto.id ? { ...p, cantidad: p.cantidad + 1 } : p
                         );
@@ -76,7 +87,6 @@ export function CarritoProvider({ children }) {
                 } else {
                     // Si no existe, agregarlo
                     if (producto.stock > 0) {
-                        actualizarStock(producto.id, 1);
                         return [...prevCarrito, { ...producto, cantidad: 1 }];
                     }
                     return prevCarrito;
@@ -85,19 +95,6 @@ export function CarritoProvider({ children }) {
         } catch (err) {
             setError(err.message);
             // Continuar con operación local incluso si backend falla
-            setCarrito(prevCarrito => {
-                const itemExistente = prevCarrito.find(p => p.id === producto.id);
-                if (itemExistente && producto.stock > 0) {
-                    actualizarStock(producto.id, 1);
-                    return prevCarrito.map(p =>
-                        p.id === producto.id ? { ...p, cantidad: p.cantidad + 1 } : p
-                    );
-                } else if (producto.stock > 0) {
-                    actualizarStock(producto.id, 1);
-                    return [...prevCarrito, { ...producto, cantidad: 1 }];
-                }
-                return prevCarrito;
-            });
         }
     };
 

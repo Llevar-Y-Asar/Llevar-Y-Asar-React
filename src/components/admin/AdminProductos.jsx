@@ -9,7 +9,7 @@ export default function AdminProductos() {
         precio: '',
         stock: '',
         categoria: 'Cortes Premium',
-        imagen: '/src/assets/image/parrillada.jpg'
+        imagen: '/assets/image/parrillada.jpg'
     });
     const [editandoId, setEditandoId] = useState(null);
 
@@ -50,7 +50,7 @@ export default function AdminProductos() {
                 precio: '', 
                 stock: '', 
                 categoria: 'Cortes Premium',
-                imagen: '/src/assets/image/parrillada.jpg'
+                imagen: '/assets/image/parrillada.jpg'
             });
         }
     };
@@ -62,7 +62,7 @@ export default function AdminProductos() {
             precio: producto.precio,
             stock: producto.stock,
             categoria: producto.categoria || 'Cortes Premium',
-            imagen: producto.imagen || '/src/assets/image/parrillada.jpg'
+            imagen: producto.imagen || '/assets/image/parrillada.jpg'
         });
         setEditandoId(producto.id);
     };
@@ -75,7 +75,7 @@ export default function AdminProductos() {
             precio: '', 
             stock: '', 
             categoria: 'Cortes Premium',
-            imagen: '/src/assets/image/parrillada.jpg'
+            imagen: '/assets/image/parrillada.jpg'
         });
     };
 

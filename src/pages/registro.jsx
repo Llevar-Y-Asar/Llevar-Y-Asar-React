@@ -66,16 +66,16 @@ export function Registro() {
         
         if (Object.keys(erroresValidacion).length === 0) {
             // Registrar en UsuarioContext
+            // IMPORTANTE: Enviar los datos en el formato que espera el backend
             registrarUsuario({
-                run: formData.run,
+                rut: formData.run,  // ← Backend espera 'rut', no 'run'
                 nombre: formData.nombre,
-                apellidos: formData.apellidos,
                 email: formData.email,
                 password: formData.password,
-                region: formData.region,
-                comuna: formData.comuna,
+                telefono: '',  // ← Backend espera telefono
                 direccion: formData.direccion,
-                fechaNacimiento: formData.fechaNacimiento
+                ciudad: formData.comuna,  // ← Mapear comuna a ciudad
+                region: formData.region
             });
 
             alert('✅ ¡Registro completado! Ahora puedes iniciar sesión.');
