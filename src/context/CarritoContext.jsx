@@ -1,5 +1,6 @@
 // src/context/CarritoContext.jsx
 import { createContext, useState, useEffect, useContext } from 'react';
+import { carritoAPI } from '../services/api';
 
 export const CarritoContext = createContext();
 
@@ -52,11 +53,7 @@ export function CarritoProvider({ children }) {
 
             // Actualizar stock en backend PRIMERO
             try {
-                await fetch(`http://localhost:8080/api/productos/${producto.id}/stock`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ cantidad: 1 }),
-                });
+                await carritoAPI.actualizarStock(producto.id, 1);
             } catch (err) {
                 console.warn('Stock no actualizado en backend:', err);
                 setError('No se pudo actualizar el stock en el servidor');
@@ -98,17 +95,6 @@ export function CarritoProvider({ children }) {
         } catch (err) {
             setError(err.message);
             // Continuar con operación local incluso si backend falla
-            setCarrito(prevCarrito => {
-                const itemExistente = prevCarrito.find(p => p.id === producto.id);
-                if (itemExistente && producto.stock > 0) {
-                    return prevCarrito.map(p =>
-                        p.id === producto.id ? { ...p, cantidad: p.cantidad + 1 } : p
-                    );
-                } else if (producto.stock > 0) {
-                    return [...prevCarrito, { ...producto, cantidad: 1 }];
-                }
-                return prevCarrito;
-            });
         }
     };
 

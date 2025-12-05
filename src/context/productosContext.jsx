@@ -65,8 +65,9 @@ export function ProductosProvider({ children }) {
         } catch (err) {
             console.error('Error cargando productos del backend:', err.message);
             setError(err.message);
-            // No hacer fallback a hardcoded - mostrar error
-            setProductos([]);
+            // Fallback a productos iniciales si el backend falla
+            console.warn('Usando datos locales como fallback');
+            setProductos(productosIniciales);
         } finally {
             setCargando(false);
         }

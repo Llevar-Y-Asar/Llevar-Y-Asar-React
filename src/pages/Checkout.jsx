@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCarrito } from '../context/CarritoContext';
 import { useUsuario } from '../context/UsuarioContext';
 import { useOrdenes } from '../context/OrdenesContext';
+import { carritoAPI } from '../services/api';
 
 export function Checkout() {
     const navigate = useNavigate();
@@ -75,21 +76,11 @@ export function Checkout() {
                     direccionEntrega: formData.direccion
                 });
 
-                // Actualizar stock en backend para cada item
-                for (const item of carrito) {
-                    try {
-                        await fetch(`http://localhost:8080/api/productos/${item.id}/stock`, {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ cantidad: item.cantidad }),
-                        });
-                    } catch (err) {
-                        console.warn('Stock no actualizado para producto:', item.id, err);
-                    }
-                }
-
-                // Limpiar carrito
-                await vaciarCarrito(usuarioLogueado.rut);
+                // Vaciar carrito en backend
+                await carritoAPI.vaciar(usuarioLogueado.rut);
+                
+                // Limpiar carrito localmente
+                vaciarCarrito();
                 
                 setIsProcessing(false);
                 setOrderCreated(true);
