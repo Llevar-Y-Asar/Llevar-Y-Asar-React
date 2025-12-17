@@ -8,7 +8,7 @@ async function request(endpoint, metodo = 'GET', datos = null) {
         }
     };
 
-    // ✅ Agregar token JWT si existe
+    // Agregar token JWT si existe
     const token = localStorage.getItem('auth_token');
     if (token) {
         opciones.headers['Authorization'] = `Bearer ${token}`;
@@ -34,21 +34,40 @@ async function request(endpoint, metodo = 'GET', datos = null) {
 }
 
 // ================== SERVICIOS ==================
+
+// PRODUCTOS
 export const productosAPI = {
-    obtenerActivos: () => request('/productos', 'GET')
+    obtenerActivos: () => request('/productos', 'GET'),
+    obtenerTodos: () => request('/productos/todos', 'GET'),
+    obtenerPorId: (id) => request(`/productos/${id}`, 'GET'),
+    crear: (producto) => request('/productos', 'POST', producto),
+    actualizar: (id, producto) => request(`/productos/${id}`, 'PUT', producto),
+    eliminar: (id) => request(`/productos/${id}`, 'DELETE'),
+    actualizarStock: (id, cantidad) => request(`/productos/${id}/stock`, 'PATCH', { cantidad })
 };
 
+// USUARIOS
 export const usuariosAPI = {
     registrar: (datos) => request('/usuarios/registro', 'POST', datos),
-    login: (email, password) => request('/usuarios/login', 'POST', { email, password })
+    login: (email, password) => request('/usuarios/login', 'POST', { email, password }),
+    obtenerPorRut: (rut) => request(`/usuarios/${rut}`, 'GET'),
+    actualizar: (rut, datos) => request(`/usuarios/${rut}`, 'PUT', datos),
+    desactivar: (rut) => request(`/usuarios/${rut}`, 'DELETE'),
+    obtenerTodos: () => request('/usuarios', 'GET')
 };
 
+// CARRITO
 export const carritoAPI = {
     obtener: (usuarioRut) => request(`/carrito/${usuarioRut}`, 'GET'),
     agregarItem: (usuarioRut, item) => request(`/carrito/${usuarioRut}/agregar`, 'POST', item),
+    eliminarItem: (usuarioRut, idProducto) => request(`/carrito/${usuarioRut}/items/${idProducto}`, 'DELETE'),
     vaciar: (usuarioRut) => request(`/carrito/${usuarioRut}/vaciar`, 'DELETE')
 };
 
+// ÓRDENES
 export const ordenesAPI = {
-    crear: (orden) => request('/ordenes', 'POST', orden)
+    crear: (orden) => request('/ordenes', 'POST', orden),
+    obtenerPorUsuario: (usuarioRut) => request(`/ordenes/usuario/${usuarioRut}`, 'GET'),
+    obtenerTodas: () => request('/ordenes', 'GET'),
+    cambiarEstado: (ordenId, estado) => request(`/ordenes/${ordenId}/estado`, 'PATCH', { estado })
 };
