@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useCarrito } from '../context/CarritoContext';
 import { useUsuario } from '../context/UsuarioContext';
 import { useOrdenes } from '../context/OrdenesContext';
@@ -7,13 +7,13 @@ import { carritoAPI } from '../services/api';
 
 export function Checkout() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { carrito, getTotalCarrito, vaciarCarrito } = useCarrito();
     const { usuarioLogueado } = useUsuario();
     const { crearOrden } = useOrdenes();
-    
     const [formData, setFormData] = useState({
-        nombre: usuarioLogueado?.nombre || '',
-        email: usuarioLogueado?.email || '',
+        nombre: '',
+        email: '',
         direccion: '',
         ciudad: '',
         telefono: '',
@@ -22,28 +22,36 @@ export function Checkout() {
         annoExp: '',
         cvv: ''
     });
-
     const [isProcessing, setIsProcessing] = useState(false);
     const [orderCreated, setOrderCreated] = useState(false);
 
-    if (carrito.length === 0 && !orderCreated) {
-        return (
-            <main style={{ padding: '2rem', textAlign: 'center', minHeight: '60vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <h1>🛒 Carrito vacío</h1>
-                <p style={{ fontSize: '1.1em', margin: '1rem 0', color: '#666' }}>No hay productos para checkout.</p>
-                <button onClick={() => navigate('/productos')} className="btn" style={{ maxWidth: '200px', margin: '2rem auto' }}>
-                    Volver a productos
-                </button>
-            </main>
-        );
-    }
+    // Redirigir si no hay carrito
+    useEffect(() => {
+        if (carrito.length === 0 && !orderCreated) {
+            navigate('/productos');
+        }
+    }, [carrito, orderCreated, navigate]);
+
+    // Cargar datos del usuario si está logueado
+    useEffect(() => {
+        if (usuarioLogueado) {
+            setFormData(prev => ({
+                ...prev,
+                nombre: usuarioLogueado.nombre || '',
+                email: usuarioLogueado.email || '',
+                direccion: usuarioLogueado.direccion || '',
+                ciudad: usuarioLogueado.ciudad || '',
+                telefono: usuarioLogueado.telefono || ''
+            }));
+        }
+    }, [usuarioLogueado]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         // Validaciones básicas
@@ -51,57 +59,49 @@ export function Checkout() {
             alert('❌ Por favor completa todos los campos');
             return;
         }
-
         if (formData.numeroTarjeta.replace(/\s/g, '').length !== 16) {
             alert('❌ Número de tarjeta debe tener 16 dígitos');
             return;
         }
 
+        // Requiere login
         if (!usuarioLogueado) {
             alert('❌ Debes iniciar sesión para crear una orden');
-            navigate('/login');
+            navigate('/login', { state: { redirect: location.pathname } });
             return;
         }
 
         setIsProcessing(true);
 
-        // Simular procesamiento de pago
-        setTimeout(async () => {
-            try {
-                // Crear orden con el backend
-                const nuevaOrden = await crearOrden({
-                    usuarioId: usuarioLogueado.rut,  // Usar RUT como ID
-                    items: carrito,
-                    total: getTotalCarrito(),
-                    direccionEntrega: formData.direccion
-                });
+        try {
+            // Crear orden
+            const nuevaOrden = await crearOrden({
+                usuarioId: usuarioLogueado.rut,
+                items: carrito,
+                total: getTotalCarrito(),
+                direccionEntrega: formData.direccion
+            });
 
-                // Vaciar carrito en backend
-                await carritoAPI.vaciar(usuarioLogueado.rut);
-                
-                // Limpiar carrito localmente
-                vaciarCarrito();
-                
-                setIsProcessing(false);
-                setOrderCreated(true);
+            // Vaciar carrito en backend
+            await carritoAPI.vaciar(usuarioLogueado.rut);
+            vaciarCarrito();
 
-                // Mostrar confirmación
-                setTimeout(() => {
-                    alert(`✅ ¡Orden confirmada exitosamente! Número de orden: ${nuevaOrden.numeroOrden}`);
-                    navigate('/perfil');
-                }, 1500);
-            } catch (error) {
-                setIsProcessing(false);
-                alert(`❌ Error al crear la orden: ${error.message}`);
-            }
-        }, 2000);
+            setOrderCreated(true);
+            setTimeout(() => {
+                alert(`✅ ¡Orden confirmada! Número: ${nuevaOrden.numeroOrden}`);
+                navigate('/perfil');
+            }, 1500);
+        } catch (error) {
+            setIsProcessing(false);
+            alert(`❌ Error al crear la orden: ${error.message}`);
+        }
     };
 
     if (orderCreated) {
         return (
-            <main style={{ padding: '2rem', textAlign: 'center', minHeight: '60vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <main className="text-center" style={{ padding: '2rem', minHeight: '60vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <h1 style={{ color: '#5cb85c' }}>✅ ¡Orden Confirmada!</h1>
-                <p style={{ fontSize: '1.1em', margin: '1rem 0', color: '#666' }}>Gracias por tu compra. Recibirás un correo de confirmación pronto.</p>
+                <p style={{ fontSize: '1.1em', margin: '1rem 0', color: '#666' }}>Gracias por tu compra.</p>
                 <button onClick={() => navigate('/')} className="btn" style={{ maxWidth: '200px', margin: '2rem auto' }}>
                     Volver al inicio
                 </button>
@@ -112,7 +112,6 @@ export function Checkout() {
     return (
         <main style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
             <h1>🛍️ Finalizar Compra</h1>
-
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '2rem' }}>
                 {/* Resumen de Orden */}
                 <section style={{ background: '#f9f9f9', padding: '1.5rem', borderRadius: '8px' }}>
@@ -187,22 +186,18 @@ export function Checkout() {
                             name="numeroTarjeta"
                             placeholder="Número de tarjeta (16 dígitos)"
                             value={formData.numeroTarjeta}
-                            onChange={(e) => {
-                                let value = e.target.value.replace(/\s/g, '').slice(0, 16);
-                                setFormData(prev => ({ ...prev, numeroTarjeta: value }));
-                            }}
+                            onChange={(e) => setFormData(prev => ({ ...prev, numeroTarjeta: e.target.value.replace(/\D/g, '').slice(0, 16) }))}
                             required
                             maxLength="16"
                             style={{ width: '100%', padding: '10px', marginBottom: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
                         />
-                        
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
                             <input
                                 type="text"
                                 name="mesExp"
                                 placeholder="MM"
                                 value={formData.mesExp}
-                                onChange={(e) => setFormData(prev => ({ ...prev, mesExp: e.target.value.slice(0, 2) }))}
+                                onChange={(e) => setFormData(prev => ({ ...prev, mesExp: e.target.value.replace(/\D/g, '').slice(0, 2) }))}
                                 required
                                 maxLength="2"
                                 style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
@@ -212,19 +207,18 @@ export function Checkout() {
                                 name="annoExp"
                                 placeholder="AA"
                                 value={formData.annoExp}
-                                onChange={(e) => setFormData(prev => ({ ...prev, annoExp: e.target.value.slice(0, 2) }))}
+                                onChange={(e) => setFormData(prev => ({ ...prev, annoExp: e.target.value.replace(/\D/g, '').slice(0, 2) }))}
                                 required
                                 maxLength="2"
                                 style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
                             />
                         </div>
-
                         <input
                             type="text"
                             name="cvv"
                             placeholder="CVV (3 dígitos)"
                             value={formData.cvv}
-                            onChange={(e) => setFormData(prev => ({ ...prev, cvv: e.target.value.slice(0, 3) }))}
+                            onChange={(e) => setFormData(prev => ({ ...prev, cvv: e.target.value.replace(/\D/g, '').slice(0, 3) }))}
                             required
                             maxLength="3"
                             style={{ width: '100%', padding: '10px', marginBottom: '1rem', border: '1px solid #ddd', borderRadius: '4px' }}
@@ -247,7 +241,6 @@ export function Checkout() {
                         >
                             {isProcessing ? '⏳ Procesando pago...' : '✅ Confirmar Compra'}
                         </button>
-
                         <button
                             type="button"
                             onClick={() => navigate('/carrito')}
