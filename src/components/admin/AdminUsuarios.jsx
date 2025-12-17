@@ -12,9 +12,13 @@ export default function AdminUsuarios() {
     const cargarUsuarios = async () => {
         setCargando(true);
         try {
+            const token = localStorage.getItem('auth_token');
             const respuesta = await fetch('http://localhost:8080/api/usuarios', {
                 method: 'GET',
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
             });
             if (respuesta.ok) {
                 const data = await respuesta.json();
@@ -33,9 +37,13 @@ export default function AdminUsuarios() {
     const handleEliminar = async (rut) => {
         if (window.confirm('¿Estás seguro de eliminar este usuario?')) {
             try {
+                const token = localStorage.getItem('auth_token');
                 const respuesta = await fetch(`http://localhost:8080/api/usuarios/${rut}`, {
                     method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
                 });
                 if (respuesta.ok) {
                     alert('✅ Usuario eliminado');
