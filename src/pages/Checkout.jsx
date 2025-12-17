@@ -32,6 +32,13 @@ export function Checkout() {
         }
     }, [carrito, orderCreated, navigate]);
 
+    // Redirigir a registro si no está logueado y tiene carrito
+    useEffect(() => {
+        if (!usuarioLogueado && carrito.length > 0) {
+            navigate('/registro', { state: { redirect: location.pathname } });
+        }
+    }, [usuarioLogueado, carrito, navigate, location.pathname]);
+
     // Cargar datos del usuario si está logueado
     useEffect(() => {
         if (usuarioLogueado) {
