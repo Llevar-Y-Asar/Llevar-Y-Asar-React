@@ -24,7 +24,7 @@ export function CarritoProvider({ children }) {
         localStorage.setItem('carrito', JSON.stringify(carrito));
     }, [carrito]);
 
-    // Cargar carrito del backend (si hay usuario logueado)
+    // Cargar carrito del backend 
     const cargarCarrito = async (usuarioRut) => {
         setCargando(true);
         setError(null);
@@ -38,7 +38,7 @@ export function CarritoProvider({ children }) {
         }
     };
 
-    // Agregar al carrito (local + backend si hay sesión)
+    // Agregar al carrito 
     const agregarAlCarrito = async (producto, usuarioRut = null) => {
         try {
             if (producto.stock <= 0) {
@@ -46,7 +46,7 @@ export function CarritoProvider({ children }) {
                 return;
             }
 
-            // Si hay usuario logueado → actualizar stock en backend
+            // Si hay usuario logueado, actualizar stock en backend
             if (usuarioRut) {
                 try {
                     await productosAPI.actualizarStock(producto.id, 1);

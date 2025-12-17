@@ -17,19 +17,19 @@ export function OrdenesProvider({ children }) {
     const [error, setError] = useState(null);
 
     // Cargar órdenes del usuario 
-     const cargarOrdenesDelUsuario = async (usuarioRut) => {
-         setCargando(true);
-         setError(null);
-         try {
-             const respuesta = await ordenesAPI.obtenerPorUsuario(usuarioRut);
-             setOrdenes(respuesta || []);
-         } catch (err) {
-             setError(err.message);
-             console.error('Error cargando órdenes:', err);
-         } finally {
-             setCargando(false);
-         }
-     };
+        const cargarOrdenesDelUsuario = async (usuarioRut) => {
+            setCargando(true);
+            setError(null);
+            try {
+                const respuesta = await ordenesAPI.obtenerPorUsuario(usuarioRut);
+                setOrdenes(respuesta || []);
+            } catch (err) {
+                setError(err.message);
+                console.error('Error cargando órdenes:', err);
+            } finally {
+                setCargando(false);
+            }
+        };
 
     // Crear nueva orden 
     const crearOrden = async (datosOrden) => {

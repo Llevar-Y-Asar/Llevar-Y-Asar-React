@@ -1,12 +1,12 @@
-import { createContext, useState, useEffect, useContext } from 'react';
-import { usuariosAPI } from '../services/api';
+// src/context/UsuarioContext.jsx
+import { createContext, useState, useContext, useEffect } from 'react';
 
 export const UsuarioContext = createContext();
 
 export function useUsuario() {
     const context = useContext(UsuarioContext);
     if (!context) {
-        throw new Error('useUsuario debe ser usado dentro de UsuarioProvider');
+        throw new Error('useUsuario debe usarse dentro de UsuarioProvider');
     }
     return context;
 }
@@ -20,7 +20,7 @@ export function UsuarioProvider({ children }) {
     const [cargando, setCargando] = useState(false);
     const [error, setError] = useState(null);
 
-    // Guardar usuario logueado en localStorage
+    // Guardar en localStorage cuando cambie el usuario
     useEffect(() => {
         if (usuarioLogueado) {
             localStorage.setItem('usuario_logueado', JSON.stringify(usuarioLogueado));
@@ -29,13 +29,19 @@ export function UsuarioProvider({ children }) {
         }
     }, [usuarioLogueado]);
 
-    // Registrar usuario con validación en backend
+    // Registrar usuario
     const registrarUsuario = async (usuarioData) => {
         setCargando(true);
         setError(null);
         try {
-            const respuesta = await usuariosAPI.registrar(usuarioData);
-            return respuesta.usuario;
+            const response = await fetch('http://localhost:8080/api/usuarios/registro', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(usuarioData)
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Error en registro');
+            return data.usuario;
         } catch (err) {
             setError(err.message);
             throw err;
@@ -44,14 +50,27 @@ export function UsuarioProvider({ children }) {
         }
     };
 
-    // Iniciar sesión contra el backend
-    const iniciarSesion = async (rut, password) => {
+    // Iniciar sesión 
+    const iniciarSesion = async (email, password) => {
         setCargando(true);
         setError(null);
         try {
-            const respuesta = await usuariosAPI.login(rut, password);
-            setUsuarioLogueado(respuesta.usuario);
-            return respuesta.usuario;
+            const response = await fetch('http://localhost:8080/api/usuarios/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Credenciales incorrectas');
+
+            //  Guardar usuario Y token
+            const usuarioConToken = {
+                ...data.usuario,
+                token: data.token
+            };
+            setUsuarioLogueado(usuarioConToken);
+            localStorage.setItem('auth_token', data.token); // ← JWT para llamadas futuras
+            return data.usuario;
         } catch (err) {
             setError(err.message);
             throw err;
@@ -64,50 +83,16 @@ export function UsuarioProvider({ children }) {
     const cerrarSesion = () => {
         setUsuarioLogueado(null);
         localStorage.removeItem('usuario_logueado');
-    };
-
-    // Actualizar datos del usuario
-    const actualizarUsuario = async (rut, datosActualizados) => {
-        setCargando(true);
-        setError(null);
-        try {
-            const respuesta = await usuariosAPI.actualizar(rut, datosActualizados);
-            const usuarioActualizado = respuesta.usuario;
-            setUsuarioLogueado(usuarioActualizado);
-            return usuarioActualizado;
-        } catch (err) {
-            setError(err.message);
-            throw err;
-        } finally {
-            setCargando(false);
-        }
-    };
-
-    // Desactivar usuario
-    const desactivarUsuario = async (rut) => {
-        setCargando(true);
-        setError(null);
-        try {
-            await usuariosAPI.desactivar(rut);
-            setUsuarioLogueado(null);
-            localStorage.removeItem('usuario_logueado');
-        } catch (err) {
-            setError(err.message);
-            throw err;
-        } finally {
-            setCargando(false);
-        }
+        localStorage.removeItem('auth_token');
     };
 
     return (
-        <UsuarioContext.Provider 
-            value={{ 
+        <UsuarioContext.Provider
+            value={{
                 usuarioLogueado,
                 registrarUsuario,
                 iniciarSesion,
                 cerrarSesion,
-                actualizarUsuario,
-                desactivarUsuario,
                 cargando,
                 error
             }}
