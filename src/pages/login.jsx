@@ -1,44 +1,34 @@
-// src/pages/Login.jsx
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useUsuario } from '../context/UsuarioContext';
 
 export function Login() {
     const navigate = useNavigate();
-    const { iniciarSesion, cargando, error } = useUsuario();
+    const location = useLocation();
+    const { iniciarSesion, cargando, error: errorContext } = useUsuario();
     const [formData, setFormData] = useState({
-        rut: '',
+        email: '',
         password: ''
     });
-
     const [errores, setErrores] = useState({});
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-        if (errores[name]) {
-            setErrores(prev => ({
-                ...prev,
-                [name]: ''
-            }));
-        }
+        setFormData(prev => ({ ...prev, [name]: value }));
+        if (errores[name]) setErrores(prev => ({ ...prev, [name]: '' }));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
         try {
-            // Intentar login contra el backend
-            const usuario = await iniciarSesion(formData.rut, formData.password);
+            const usuario = await iniciarSesion(formData.email, formData.password);
             alert(`✅ ¡Bienvenido ${usuario.nombre}!`);
-            navigate('/perfil');
+
+            // Redirigir tras login
+            const redirect = location.state?.redirect || '/perfil';
+            navigate(redirect);
         } catch (err) {
-            setErrores({ 
-                general: `❌ ${err.message || 'Error al iniciar sesión. Verifica RUT y contraseña.'}` 
-            });
+            setErrores({ general: `❌ ${err.message || 'Error al iniciar sesión. Verifica email y contraseña.'}` });
         }
     };
 
@@ -47,21 +37,21 @@ export function Login() {
             <section>
                 <h1>Iniciar Sesión</h1>
                 <p>Ingresa tus datos para acceder a tu cuenta y realizar pedidos.</p>
-                <form id="form-login" onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit}>
                     {errores.general && <div className="error">{errores.general}</div>}
-                    {error && <div className="error">{error}</div>}
+                    {errorContext && <div className="error">{errorContext}</div>}
 
-                    <label>RUT (Ej: 12.345.678-9):</label>
+                    <label>Email:</label>
                     <input
-                        type="text"
-                        name="rut"
-                        placeholder="12.345.678-9"
-                        value={formData.rut}
+                        type="email"
+                        name="email"
+                        placeholder="nombre@dominio.com"
+                        value={formData.email}
                         onChange={handleChange}
                         required
                         disabled={cargando}
                     />
-                    {errores.rut && <div className="error">{errores.rut}</div>}
+                    {errores.email && <div className="error">{errores.email}</div>}
 
                     <label>Contraseña:</label>
                     <input

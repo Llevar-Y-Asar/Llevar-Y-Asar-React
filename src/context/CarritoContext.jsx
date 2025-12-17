@@ -1,33 +1,30 @@
-// src/context/CarritoContext.jsx
 import { createContext, useState, useEffect, useContext } from 'react';
-import { carritoAPI } from '../services/api';
+import { carritoAPI, productosAPI } from '../services/api';
 
 export const CarritoContext = createContext();
 
 export function useCarrito() {
     const context = useContext(CarritoContext);
     if (!context) {
-        throw new Error('useCarrito debe ser usado dentro de CarritoProvider');
+        throw new Error('useCarrito debe usarse dentro de CarritoProvider');
     }
     return context;
 }
 
 export function CarritoProvider({ children }) {
     const [carrito, setCarrito] = useState(() => {
-        // Cargar del localStorage al iniciar
         const saved = localStorage.getItem('carrito');
         return saved ? JSON.parse(saved) : [];
     });
-
     const [cargando, setCargando] = useState(false);
     const [error, setError] = useState(null);
 
-    // Guardar en localStorage cada vez que cambia el carrito
+    // Guardar en localStorage
     useEffect(() => {
         localStorage.setItem('carrito', JSON.stringify(carrito));
     }, [carrito]);
 
-    // Cargar carrito del backend para un usuario específico
+    // Cargar carrito del backend (si hay usuario logueado)
     const cargarCarrito = async (usuarioRut) => {
         setCargando(true);
         setError(null);
@@ -36,32 +33,29 @@ export function CarritoProvider({ children }) {
             setCarrito(respuesta.carrito?.items || []);
         } catch (err) {
             console.warn('No se pudo cargar carrito del backend:', err.message);
-            // Usar datos locales como fallback
         } finally {
             setCargando(false);
         }
     };
 
-    // Agregar item al carrito
+    // Agregar al carrito (local + backend si hay sesión)
     const agregarAlCarrito = async (producto, usuarioRut = null) => {
         try {
-            // Validar que tiene stock
-            if (!producto || producto.stock <= 0) {
+            if (producto.stock <= 0) {
                 setError('Producto sin stock');
                 return;
             }
 
-            // Actualizar stock en backend PRIMERO
-            try {
-                await carritoAPI.actualizarStock(producto.id, 1);
-            } catch (err) {
-                console.warn('Stock no actualizado en backend:', err);
-                setError('No se pudo actualizar el stock en el servidor');
-                return;
-            }
-
-            // Si hay usuario logueado, sincronizar carrito con backend
+            // Si hay usuario logueado → actualizar stock en backend
             if (usuarioRut) {
+                try {
+                    await productosAPI.actualizarStock(producto.id, 1);
+                } catch (err) {
+                    setError('No se pudo actualizar el stock en el servidor');
+                    return;
+                }
+
+                // Sincronizar item con backend
                 const item = {
                     productoId: producto.id,
                     nombre: producto.nombre,
@@ -72,40 +66,28 @@ export function CarritoProvider({ children }) {
                 await carritoAPI.agregarItem(usuarioRut, item);
             }
 
-            // Actualizar carrito localmente
+            // Actualizar carrito local
             setCarrito(prevCarrito => {
                 const itemExistente = prevCarrito.find(p => p.id === producto.id);
-                
                 if (itemExistente) {
-                    // Si ya existe, aumentar cantidad
-                    if (producto.stock > 0) {
-                        return prevCarrito.map(p =>
-                            p.id === producto.id ? { ...p, cantidad: p.cantidad + 1 } : p
-                        );
-                    }
-                    return prevCarrito;
+                    return prevCarrito.map(p =>
+                        p.id === producto.id ? { ...p, cantidad: p.cantidad + 1 } : p
+                    );
                 } else {
-                    // Si no existe, agregarlo
-                    if (producto.stock > 0) {
-                        return [...prevCarrito, { ...producto, cantidad: 1 }];
-                    }
-                    return prevCarrito;
+                    return [...prevCarrito, { ...producto, cantidad: 1 }];
                 }
             });
         } catch (err) {
             setError(err.message);
-            // Continuar con operación local incluso si backend falla
         }
     };
 
-    // Quitar item del carrito
+    // Quitar del carrito
     const quitarDelCarrito = async (id, usuarioRut = null) => {
         try {
-            // Si hay usuario logueado, sincronizar con backend
             if (usuarioRut) {
                 await carritoAPI.eliminarItem(usuarioRut, id);
             }
-
             setCarrito(prevCarrito => {
                 const item = prevCarrito.find(p => p.id === id);
                 if (item && item.cantidad > 1) {
@@ -118,33 +100,18 @@ export function CarritoProvider({ children }) {
             });
         } catch (err) {
             setError(err.message);
-            // Continuar con operación local
-            setCarrito(prevCarrito => {
-                const item = prevCarrito.find(p => p.id === id);
-                if (item && item.cantidad > 1) {
-                    return prevCarrito.map(p =>
-                        p.id === id ? { ...p, cantidad: p.cantidad - 1 } : p
-                    );
-                } else {
-                    return prevCarrito.filter(p => p.id !== id);
-                }
-            });
         }
     };
 
     // Vaciar carrito
     const vaciarCarrito = async (usuarioRut = null) => {
         try {
-            // Si hay usuario logueado, sincronizar con backend
             if (usuarioRut) {
                 await carritoAPI.vaciar(usuarioRut);
             }
-
             setCarrito([]);
         } catch (err) {
             setError(err.message);
-            // Continuar con operación local
-            setCarrito([]);
         }
     };
 
@@ -157,11 +124,11 @@ export function CarritoProvider({ children }) {
     };
 
     return (
-        <CarritoContext.Provider 
-            value={{ 
-                carrito, 
-                agregarAlCarrito, 
-                quitarDelCarrito, 
+        <CarritoContext.Provider
+            value={{
+                carrito,
+                agregarAlCarrito,
+                quitarDelCarrito,
                 vaciarCarrito,
                 getTotalCarrito,
                 getCantidadItems,
