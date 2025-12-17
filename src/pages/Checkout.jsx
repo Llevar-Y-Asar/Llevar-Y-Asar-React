@@ -66,8 +66,8 @@ export function Checkout() {
 
         // Requiere login
         if (!usuarioLogueado) {
-            alert('❌ Debes iniciar sesión para crear una orden');
-            navigate('/login', { state: { redirect: location.pathname } });
+            alert('❌ Debes crear una cuenta para completar tu compra');
+            navigate('/registro', { state: { redirect: location.pathname } });
             return;
         }
 
