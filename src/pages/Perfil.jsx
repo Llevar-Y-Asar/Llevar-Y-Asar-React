@@ -1,19 +1,11 @@
-// src/pages/Perfil.jsx
-import { useNavigate, useEffect } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUsuario } from '../context/UsuarioContext';
 import { useOrdenes } from '../context/OrdenesContext'; // ← IMPORTANTE
 
 export function Perfil() {
     const navigate = useNavigate();
     const { usuarioLogueado, cerrarSesion } = useUsuario();
-    const { ordenes, cargarOrdenesDelUsuario, cargando, error } = useOrdenes(); // ← USAR CONTEXTO
-
-    // Cargar órdenes al montar si hay usuario
-    useEffect(() => {
-        if (usuarioLogueado) {
-            cargarOrdenesDelUsuario(usuarioLogueado.rut); // ← Backend espera RUT
-        }
-    }, [usuarioLogueado, cargarOrdenesDelUsuario]);
 
     if (!usuarioLogueado) {
         return (
@@ -37,6 +29,8 @@ export function Perfil() {
         navigate('/');
     };
 
+    const ordenes = usuarioLogueado.ordenes || [];
+
     return (
         <main style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
             <h1>👤 Mi Perfil</h1>
@@ -46,13 +40,11 @@ export function Perfil() {
                 <section style={{ background: '#f9f9f9', padding: '1.5rem', borderRadius: '8px' }}>
                     <h2>📋 Mis Datos</h2>
                     <div style={{ marginTop: '1rem' }}>
-                        <p><strong>Nombre:</strong> {usuarioLogueado.nombre}</p>
-                        <p><strong>RUT:</strong> {usuarioLogueado.rut}</p>
+                        <p><strong>Nombre:</strong> {usuarioLogueado.nombre} {usuarioLogueado.apellidos}</p>
+                        <p><strong>RUT:</strong> {usuarioLogueado.run}</p>
                         <p><strong>Email:</strong> {usuarioLogueado.email}</p>
-                        <p><strong>Teléfono:</strong> {usuarioLogueado.telefono || 'No especificado'}</p>
                         <p><strong>Región:</strong> {usuarioLogueado.region || 'No especificada'}</p>
-                        <p><strong>Ciudad:</strong> {usuarioLogueado.ciudad || 'No especificada'}</p>
-                        <p><strong>Miembro desde:</strong> {new Date().toLocaleDateString('es-CL')}</p>
+                        <p><strong>Miembro desde:</strong> {new Date(usuarioLogueado.fechaRegistro).toLocaleDateString('es-CL')}</p>
                     </div>
 
                     <div style={{ marginTop: '2rem' }}>
@@ -112,11 +104,7 @@ export function Perfil() {
             <section style={{ marginTop: '2rem', background: '#f9f9f9', padding: '1.5rem', borderRadius: '8px' }}>
                 <h2>🛍️ Historial de Órdenes</h2>
                 
-                {cargando ? (
-                    <p style={{ textAlign: 'center', color: '#666', marginTop: '1rem' }}>Cargando órdenes...</p>
-                ) : error ? (
-                    <p style={{ textAlign: 'center', color: '#d9534f', marginTop: '1rem' }}>Error al cargar órdenes: {error}</p>
-                ) : ordenes.length === 0 ? (
+                {ordenes.length === 0 ? (
                     <p style={{ textAlign: 'center', color: '#666', marginTop: '1rem' }}>
                         Aún no has realizado ninguna compra.
                     </p>
@@ -134,32 +122,30 @@ export function Perfil() {
                             </thead>
                             <tbody>
                                 {ordenes.map(orden => (
-                                    <tr key={orden._id || orden.id} style={{ borderBottom: '1px solid #ddd' }}>
+                                    <tr key={orden.id} style={{ borderBottom: '1px solid #ddd' }}>
                                         <td style={{ padding: '10px' }}>
                                             <code style={{ background: '#f0f0f0', padding: '4px 8px', borderRadius: '4px' }}>
-                                                {orden.numeroOrden || orden._id?.substring(0, 8)}
+                                                {orden.id.slice(0, 8)}
                                             </code>
                                         </td>
                                         <td style={{ padding: '10px' }}>
-                                            {orden.fechaCreacion ? new Date(orden.fechaCreacion).toLocaleDateString('es-CL') : 'N/A'}
+                                            {orden.fecha}
                                         </td>
                                         <td style={{ padding: '10px' }}>
                                             {(orden.items || []).length} producto{(orden.items || []).length !== 1 ? 's' : ''}
                                         </td>
                                         <td style={{ padding: '10px', fontWeight: 'bold', color: '#5cb85c' }}>
-                                            ${orden.total?.toLocaleString('es-CL') || '0'}
+                                            ${orden.total.toLocaleString('es-CL')}
                                         </td>
                                         <td style={{ padding: '10px' }}>
                                             <span style={{
-                                                background: orden.estado === 'entregado' ? '#d4edda' : 
-                                                            orden.estado === 'cancelado' ? '#f8d7da' : '#fff3cd',
-                                                color: orden.estado === 'entregado' ? '#155724' :
-                                                        orden.estado === 'cancelado' ? '#721c24' : '#856404',
+                                                background: orden.estado === 'confirmada' ? '#d4edda' : '#fff3cd',
+                                                color: orden.estado === 'confirmada' ? '#155724' : '#856404',
                                                 padding: '4px 12px',
                                                 borderRadius: '20px',
                                                 fontSize: '0.9em'
                                             }}>
-                                                {orden.estado || 'pendiente'}
+                                                {orden.estado === 'confirmada' ? '✅ Confirmada' : '⏳ Pendiente'}
                                             </span>
                                         </td>
                                     </tr>

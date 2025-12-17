@@ -10,6 +10,7 @@ import { Perfil } from './pages/Perfil';
 import Admin from './pages/Admin';
 import { Nosotros } from './pages/Nosotros';
 import { Blog } from './pages/Blog';
+import { BlogDetalle } from './pages/BlogDetalle';
 import { Contacto } from './pages/Contacto';
 import { Carrito } from './pages/Carrito';
 import { Checkout } from './pages/Checkout';
@@ -32,6 +33,7 @@ export default function App() {
                 <Route path="/productos" element={<Productos />} />
                 <Route path="/nosotros" element={<Nosotros />} />
                 <Route path="/blog" element={<Blog />} />
+                <Route path="/blog/:id" element={<BlogDetalle />} />
                 <Route path="/contacto" element={<Contacto />} />
                 <Route path="/registro" element={<Registro />} />
                 <Route path="/login" element={<Login />} />
