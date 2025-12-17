@@ -22,8 +22,8 @@ export function validarRut(rut) {
 }
 
 export function validarDominioCorreo(email) {
-  const dominiosPermitidos = ['@duoc.cl', '@profesor.duoc.cl', '@gmail.com'];
-  return dominiosPermitidos.some(d => email.toLowerCase().endsWith(d));
+  // Validación deshabilitada: permite cualquier dominio
+  return true;
 }
 
 export const regionesYComunas = {
