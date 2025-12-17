@@ -1,8 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useCarrito } from '../context/CarritoContext';
+import { useUsuario } from '../context/UsuarioContext';
 
 export function Carrito() {
     const { carrito, quitarDelCarrito, vaciarCarrito, getTotalCarrito } = useCarrito();
+    const { usuarioLogueado } = useUsuario();
     const navigate = useNavigate();
     
     if (carrito.length === 0) {
@@ -72,7 +74,7 @@ export function Carrito() {
                 {/* Barra lateral de acciones */}
                 <aside className="carrito-acciones">
                     <h2>Total: $<span id="carrito-total">{getTotalCarrito().toLocaleString('es-CL')}</span></h2>
-                    <button id="vaciar-carrito" onClick={vaciarCarrito}>Vaciar carrito</button>
+                    <button id="vaciar-carrito" onClick={() => vaciarCarrito(usuarioLogueado?.rut)}>Vaciar carrito</button>
                     <button id="finalizar-compra" onClick={() => navigate('/checkout')}>Finalizar compra</button>
                 </aside>
 

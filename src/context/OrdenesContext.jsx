@@ -53,7 +53,8 @@ export function OrdenesProvider({ children }) {
                 ordenes,
                 cargando,
                 error,
-                // cargarOrdenesDelUsuario
+                crearOrden,
+                cargarOrdenesDelUsuario
             }}
         >
             {children}
