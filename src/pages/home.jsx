@@ -23,10 +23,10 @@ export function Home() {
         <section id="categorias" aria-label="Categorías">
           <h2>Explora por categoría</h2>
           <div className="categorias-grid">
-              <div className="categoria">🥩 Cortes Premium</div>
-              <div className="categoria">🌭 Embutidos</div>
-              <div className="categoria">🍖 Combos</div>
-              <div className="categoria">🔥 Parrilladas</div>
+              <Link to="/productos?categoria=Cortes Premium" className="categoria">🥩 Cortes Premium</Link>
+              <Link to="/productos?categoria=Embutidos" className="categoria">🌭 Embutidos</Link>
+              <Link to="/productos?categoria=Combos" className="categoria">🍖 Combos</Link>
+              <Link to="/productos?categoria=Parrilladas" className="categoria">🔥 Parrilladas</Link>
           </div>
         </section>
 

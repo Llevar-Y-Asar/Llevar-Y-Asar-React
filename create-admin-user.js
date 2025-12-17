@@ -1,53 +1,48 @@
-// Script para crear un usuario admin en MongoDB
+// Script para crear un usuario admin en MongoDB Atlas
 // Ejecutar: node create-admin-user.js
 
-const { MongoClient } = require('mongodb');
+import { MongoClient } from 'mongodb';
 
-// Conexión local (asegúrate de que MongoDB esté corriendo en localhost:27017)
-const uri = 'mongodb://localhost:27017';
+// Conexión a MongoDB Atlas
+const uri = 'mongodb+srv://pabgarciam_db_user:Pq9pEQl8W3mWhpTt@cluster0.0pkavoy.mongodb.net/llevarayasar?retryWrites=true&w=majority&appName=Cluster0';
 const client = new MongoClient(uri);
 
 async function crearAdminUser() {
     try {
-        console.log('Conectando a MongoDB en localhost...');
+        console.log('Conectando a MongoDB Atlas...');
         await client.connect();
         
         const db = client.db('llevarayasar');
         const usuariosCollection = db.collection('usuarios');
 
-        // Usuario admin para testing
+        // Usuario admin con credenciales especificadas
         const adminUser = {
-            rut: '20.000.000-0',
+            email: 'test@admin',
+            password: 'admin,123',
             nombre: 'Administrador',
-            email: 'admin@llevarayasar.cl',
-            password: 'Admin123!',
-            telefono: '9123456789',
-            direccion: 'Admin Street 123',
-            ciudad: 'Santiago',
-            region: 'Metropolitana',
+            rut: '20.000.000-0',
             rol: 'ADMIN',
             activo: true,
             fechaRegistro: new Date()
         };
 
         const result = await usuariosCollection.updateOne(
-            { rut: adminUser.rut },
+            { email: adminUser.email },
             { $set: adminUser },
             { upsert: true }
         );
 
         if (result.upsertedCount > 0) {
             console.log('✅ Usuario admin creado exitosamente');
-            console.log('RUT: 20.000.000-0');
-            console.log('Contraseña: Admin123!');
-        } else {
+            console.log('Email: test@admin');
+            console.log('Contraseña: admin,123');
+            console.log('Rol: ADMIN');
+        } else if (result.matchedCount > 0) {
             console.log('✅ Usuario admin ya existe o fue actualizado');
         }
 
     } catch (error) {
         console.error('❌ Error:', error.message);
-        console.log('\n⚠️ Asegúrate de que MongoDB esté corriendo en localhost:27017');
-        console.log('Si usas MongoDB Atlas, actualiza la URI en el script');
     } finally {
         await client.close();
     }
